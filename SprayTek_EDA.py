@@ -52,3 +52,4 @@ production_df['DryQty_Difference'] = (production_df['ScheduledDryQty'] - product
 ##### Import weather data #####
 middlesex_weather = pd.read_excel('Initial_Data.xlsx', sheet_name = 'MiddlesexWeather')
 bethlehem_weather = pd.read_excel('Initial_Data.xlsx', sheet_name = 'BethlehemWeather')
+
