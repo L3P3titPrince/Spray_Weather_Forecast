@@ -12,7 +12,7 @@ import os
 
 class ImportData(HyperParamters):
     """
-
+    Contain two method: import data and convert time
 
 
     """
@@ -50,6 +50,8 @@ class ImportData(HyperParamters):
         print("*" * 40, "End import_data() with {} second".format(cost_time), "*" * 40, end='\n\n')
 
         return df_product, df_nj_weather, df_pa_weather
+
+
 
 
 

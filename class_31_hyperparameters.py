@@ -37,3 +37,6 @@ class HyperParamters(object):
 
         # you can change this root path in this class and import_data() function will search from this root dictionary
         self.ROOTPATH = 'D:\\OneDrive\\03_Academic\\23_Github\\20_Stevens\\66-MGT-809\\03_data'
+
+        # assign the column will be dropped in production table
+        self.DROP_COL = ['Bulk Density', 'Moisture Target']
