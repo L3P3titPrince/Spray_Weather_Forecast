@@ -1,4 +1,4 @@
-# from class_31_hyperparameters import HyperParamters
+from class_31_hyperparameters import HyperParamters
 
 # read xlxs file
 import pandas as pd
