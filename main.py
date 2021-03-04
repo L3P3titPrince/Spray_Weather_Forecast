@@ -16,15 +16,17 @@ def main():
 
     # *******************3.Preprocess**************************************
     class_pre = PreProcess()
-    df_product, df_nj_weather, df_pa_weather = class_pre.clean_data(df_product, df_nj_weather, df_pa_weather)
+    df_product, df_nj_weather, df_pa_weather, df_dropped, df_outlier = class_pre.clean_data(df_product,
+                                                                                df_nj_weather,
+                                                                                df_pa_weather)
 
 
-    return df_product, df_nj_weather, df_pa_weather
+    return df_product, df_nj_weather, df_pa_weather, df_dropped, df_outlier
 
 if __name__=="__main__":
     """:arg
     
     """
-    (df_product, df_nj_weather, df_pa_weather) = main()
+    (df_product, df_nj_weather, df_pa_weather, df_dropped, df_outlier) = main()
 
     print("OVER")
