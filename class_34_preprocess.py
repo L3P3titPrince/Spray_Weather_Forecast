@@ -156,11 +156,17 @@ class PreProcess(HyperParamters):
         print("*" * 50, "Start clean_data()", "*" * 50)
         start_time = time()
 
+        class_eda = EDA()
         #***************Drop non-realted columns**********************
         # *************Drop by columns**************
         # ['Bulk Density'] have 50% missing data
         df_product = df_product.drop(self.DROP_COL, axis=1)
         print("These columns have been dropped {}".format(self.DROP_COL))
+        # some weather data might also need clearn
+        list_missing_nj = class_eda.missing_plot(df_nj_weather)
+        df_nj_weather = df_nj_weather.drop(list_missing_nj, axis = 1)
+        list_missing_pa = class_eda.missing_plot(df_pa_weather)
+        df_pa_weather = df_pa_weather.drop(list_missing_pa, axis = 1)
         #******************End************************************
 
 
@@ -176,7 +182,6 @@ class PreProcess(HyperParamters):
         #***********************End***************************************************
 
         #*************Drop missing data********************************
-        class_eda = EDA()
         list_col_missing_product = class_eda.missing_plot(df_product)
         #**************Drop by rows**********************
         # we get the name of columns that has missing value from eda part
@@ -191,7 +196,7 @@ class PreProcess(HyperParamters):
         str_col='YieldPercentage'
         df_product, df_outlier = self.del_outlier(df_product, str_col, abs=False)
 
-        # some weather data might also need clearn
+
 
 
 
