@@ -57,5 +57,6 @@ class EDA(HyperParamters):
         ax2.set_title("Columns with missing values")
 
         plt.show()
-        print(col_missing_value, type(col_missing_value))
+        # print(col_missing_value, type(col_missing_value))
+
         return col_missing_value
