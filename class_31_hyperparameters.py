@@ -36,7 +36,15 @@ class HyperParamters(object):
         self.TEST = 1
 
         # you can change this root path in this class and import_data() function will search from this root dictionary
-        self.ROOTPATH = 'D:\\OneDrive\\03_Academic\\23_Github\\20_Stevens\\66-MGT-809\\03_data'
+        self.ROOTPATH = 'D:\\OneDrive\\03_Academic\\23_Github\\20_Stevens\\66-MGT-809-A\\03_data'
 
         # assign the column will be dropped in production table
-        self.DROP_COL = ['Bulk Density', 'Moisture Target']
+        # we believe these columns are objective result or not useful features
+        # ['Bulk Density'] is too objective
+        # ['Moisture'] is decided by custome requirement, that might affect drying time
+        # ['Hygroscopicity'] imbalance data distribution
+        self.DROP_COL = ['Bulk Density', 'Moisture','Flow', 'Hygroscopicity']
+        # we use z-score as our defination, If we set threshold as 3, the yeild great than 120% will be eliminate
+        # we also have a np.abs() for smaller outliers, which also affected by this threshold
+        self.YEILD_THRESHOLD = 3
+
