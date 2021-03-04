@@ -90,23 +90,51 @@ class PreProcess(HyperParamters):
         return df_clean, df_dropped
 
 
-    def del_outlier(self, column, abs=False):
-        """:arg
-        We use z-score to delete outliers in our data.
-        When ads=True, it will delete small outliers. When ads=False, it only delete greater than 110%
+    def del_outlier(self, df, str_col, abs=False):
+        """
+        We use z-score to delete outliers in our data. for example ['YieldPrecentage'] and ['Rate']
+        When ads=True, it will delete smallest and biggest outliers.
+        When ads=False, it will only delete outliers ['YieldPercentage']> 130%, which means remain [0,130]
+
+        Args:
+        ------
+        df:DataFrame
+            Any dataframe
+        str_col:str
+            the name of column you want to detect outliers and drop
+
+        Returns:
+        --------
+        df_clean:DataFrame
+            df has been dropped
+        df_outlier:DataFrame
+            The rows that has been detected as outliers
         """
         if abs:
-            z_score = np.abs(stats.zscore(df_product['YieldPercentage'], nan_policy='omit'))
-        z_score = np.abs(stats.zscore(df_product['YieldPercentage'], nan_policy='omit'))
+            # if abs=True, we will absolute z-score and find the both side outliers
+            z_score = np.abs(stats.zscore(df[str_col], nan_policy='omit'))
+            print("We will drop too large and too small outliers")
+        else:
+            # if abs=False (default setting), we only delete the too large outlers
+            z_score = stats.zscore(df[str_col], nan_policy='omit')
+            print("we will only drop too large outliers")
         # set a z-score threshold, any greater than this value will be eliminate
-        z_threshold = 3
+        # z_threshold = 3
         # filter that ooutlier rows in dataframe
-        index_outlier = np.where(z_score > z_threshold)
-        # print out result
-        print('We have {} data points are outliers'.format(len(index_outlier[0])))
+        # index_outlier = np.where(z_score > z_threshold, z_score)
+        # get the index of these outliers
+        index_outlier = df[z_score > self.YEILD_THRESHOLD].index
+        # restore these outliers in df_outlier for further review
+        df_outlier = df.loc[index_outlier]
+        print('We have {} data points are outliers, which between {} and {}'.format(len(index_outlier),
+                                                                                    df_outlier[str_col].min(),
+                                                                                    df_outlier[str_col].max()))
         # drop these rows by index
-        df_11 = df_product.drop(index_outlier[0])
-
+        df_clean = df.drop(axis=0, index=index_outlier)
+        print("After drop outlier, the {} column remain range between {} and {}".format(str_col,
+                                                                                        df_clean[str_col].min(),
+                                                                                        df_clean[str_col].max()))
+        return df_clean, df_outlier
 
 
     def clean_data(self, df_product, df_nj_weather, df_pa_weather):
@@ -157,17 +185,18 @@ class PreProcess(HyperParamters):
 
 
         #*****************Drop by outliers****************
-
+        # after drop non-related columns, convert timestamp format, drop missing data by rows,
+        # we need to drop outliers in some necessary columns
+        # we might need automate generate outlier by some EDA() models
+        str_col='YieldPercentage'
+        df_product, df_outlier = self.del_outlier(df_product, str_col, abs=False)
 
         # some weather data might also need clearn
-
-
-
 
 
 
         cost_time = round((time() - start_time), 4)
         print("*" * 40, "End clean_data() with {} second".format(cost_time), "*" * 40, end='\n\n')
 
-        return df_product, df_nj_weather, df_pa_weather, df_dropped
+        return df_product, df_nj_weather, df_pa_weather, df_dropped, df_outlier
 
