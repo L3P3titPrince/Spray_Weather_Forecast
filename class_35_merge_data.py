@@ -1,6 +1,9 @@
 from class_31_hyperparameters import HyperParamters
 
-from pandas import pd
+import pandas as pd
+import numpy as np
+# for time sum()
+import datetime
 
 class MergeData(HyperParamters):
     """:arg
@@ -15,9 +18,39 @@ class MergeData(HyperParamters):
     def __init__(self):
         HyperParamters.__init__(self)
 
-    def row_proliferate(self):
+    def convert_timedelta(self, element):
+        """:arg
+        """
+        time_delta = datetime.timedelta(hours = element)
+        return time_delta
 
-        return None
+
+    def row_proliferate(self, df_product):
+        """:arg
+        Because weather data is split by hour, so we need transform each records into every hour records
+        """
+        # first create a new column ['hours'] from ['DryingTime_Hrs'] round to bigger integer
+        df_product['hours'] = np.ceil(df_product['DryingTime_Hrs']).astype(int)
+        # Second, repeat each records/rows by ['hours'] times
+        # which means you will have how many running hours, you will have how many rows for each column
+        df_multi = pd.DataFrame(np.repeat(df_product.values, df_product['hours'], axis=0),
+                                      columns = df_product.columns)
+        # Thrid, adjust ['hours'] to ascending rank model, for instance, [3,3,3] to [0,1,2]
+        # this is used for next step add to ['dt_est'] time
+        # groupby each old record, for instance, for first records, groupby will be a three row table
+        # for second records, groupby['StartData'] will be a nine row table
+        # Then, extract ['hours'] column, for each pd.Series, apply a fomulation
+        # addition, in here, ['hours'] will not be a single row, instead, it will be a three element Series
+        # for this three/nine series, we cacualte their cumulation sum cumsum() [3,3,3] will be [3,6,9]
+        # for instance [9.9.9.9...9] will be [9,18,27,,,,81]
+        # and we divide by ['hours'] count, which will be [3,9,...], last minute 1 to get a column for timestamp add
+        df_multi['hour_add'] = df_multi.groupby(['StartDate'])['hours'].apply(lambda x:x.cumsum()/x.count())-1
+        # our weather segmentation is one hour
+        # one_hour = datetime.timedelta(hours = 1)
+        df_multi['hour_add'] = df_multi['hour_add'].apply(self.convert_timedelta)
+        df_multi['dt_est'] = df_multi['dt_est'] + df_multi['hour_add']
+
+        return df_multi
 
 
 
