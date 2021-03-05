@@ -15,6 +15,10 @@ class MergeData(HyperParamters):
     def __init__(self):
         HyperParamters.__init__(self)
 
+    def row_proliferate(self):
+
+        return None
+
 
 
     def merge_one(self, df_product, df_nj_weather, df_pa_weather):
@@ -25,3 +29,4 @@ class MergeData(HyperParamters):
         df_pa = pd.merge(df_product, df_pa_weather, how='left', on=['dt_est'])
 
         return df_nj, df_pa
+
