@@ -23,7 +23,7 @@ def main():
 
     #*******************3.5 MergeDate************************
     class_merge = MergeData()
-    df_nj, df_pa = class_merge.merge_one(df_product, df_nj_weather, df_pa_weather)
+    df_nj, df_pa = class_merge.merge_location(df_product, df_nj_weather, df_pa_weather)
     df_multi = class_merge.row_proliferate(df_product)
 
     return (df_product, df_nj_weather, df_pa_weather, df_dropped, df_outlier,
