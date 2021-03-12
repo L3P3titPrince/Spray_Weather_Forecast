@@ -35,7 +35,13 @@ class MergeData(HyperParamters):
         Args:
         -----
         df_product:DataFrame
+            Production data that complete clean
 
+        Returns:
+        -------
+        self.df_multi:DataFrame
+            Inhereit production information from df_product, so its a production df with ['dt_est'] hours proliferate
+            All other function in this class wiil need call this variable to merge
         """
         # first create a new column ['hours'] from ['DryingTime_Hrs'] round to bigger integer
         df_product['hours'] = np.ceil(df_product['DryingTime_Hrs']).astype(int)
@@ -66,13 +72,12 @@ class MergeData(HyperParamters):
         split by location, just merge all together by ['dt_est']
         """
         # Identify location by ['Batchnumber']
-        df_nj_pro = df_product[df_product['BatchNumber'].str.contains('NJ', regex=False)]
+        df_nj_product = self.df_multi[self.df_multi['BatchNumber'].str.contains('NJ', regex=False)]
         # them merge them into a new DataFrame
-        df_nj = pd.merge(df_nj_pro, df_nj_weather, how='left', on=['dt_est'])
-        df_pa_pro = df_product[df_product['BatchNumber'].str.contains('PA', regex=False)]
+        df_nj = pd.merge(df_nj_product, df_nj_weather, how='left', on=['dt_est'])
+        # merge with self.df_multi and got a new NJ_Production DataFrame
+        df_pa_pro = self.df_multi[self.df_multi['BatchNumber'].str.contains('PA', regex=False)]
+        # then merge
         df_pa = pd.merge(df_pa_pro, df_pa_weather, how='left', on=['dt_est'])
 
         return df_nj, df_pa
-
-
-

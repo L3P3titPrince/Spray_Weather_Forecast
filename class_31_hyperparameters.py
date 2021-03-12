@@ -43,7 +43,11 @@ class HyperParamters(object):
         # ['Bulk Density'] is too objective
         # ['Moisture'] is decided by custome requirement, that might affect drying time
         # ['Hygroscopicity'] imbalance data distribution
-        self.DROP_COL = ['Bulk Density', 'Moisture','Flow', 'Hygroscopicity']
+        self.PRODUCT_DROP = ['Bulk Density', 'Moisture','Flow', 'Hygroscopicity']
+
+        # these are the un-related columns in weather data
+        self.WEATHER_DROP = ['dt_iso', 'timezone', '']
+
         # we use z-score as our defination, If we set threshold as 3, the yeild great than 120% will be eliminate
         # we also have a np.abs() for smaller outliers, which also affected by this threshold
         # 3 - 130% /  1.5 - 111%   /

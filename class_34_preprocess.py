@@ -160,8 +160,10 @@ class PreProcess(HyperParamters):
         #***************Drop non-realted columns**********************
         # *************Drop by columns**************
         # ['Bulk Density'] have 50% missing data
-        df_product = df_product.drop(self.DROP_COL, axis=1)
-        print("These columns have been dropped {}".format(self.DROP_COL))
+        df_product = df_product.drop(self.PRODUCT_DROP, axis=1)
+        print("In Production sheet, these columns have been dropped {}".format(self.PRODUCT_DROP))
+        # Drop un-related colunms from weather data
+        df_nj_weather = df_nj_weather.drop
         # some weather data might also need clearn
         list_missing_nj = class_eda.missing_plot(df_nj_weather)
         df_nj_weather = df_nj_weather.drop(list_missing_nj, axis = 1)
@@ -171,6 +173,9 @@ class PreProcess(HyperParamters):
 
 
         #**************Convert all time into same timestamp format***************************
+        # It should clean data first by columns then by rows, but missing data will appear when you convert time
+        # From out put, we can now, 11-05 and 11-06 two records got Nan on ['dt_est'] column,
+        # so we need drop them by row in the next part
         # convert weather data ['dt'] (unix time) to Eastern Stardard Time(EST)
         # pass an argument(series) to function tz_convert()
         df_nj_weather['dt_est'] = df_nj_weather['dt'].apply(self.tz_convert)
@@ -180,6 +185,7 @@ class PreProcess(HyperParamters):
         # for merge purpose, make sure two column have same name
         df_product['dt_est'] = df_product['StartDate'].apply(self.round_to_hour)
         #***********************End***************************************************
+
 
         #*************Drop missing data********************************
         list_col_missing_product = class_eda.missing_plot(df_product)
