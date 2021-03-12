@@ -46,5 +46,6 @@ class HyperParamters(object):
         self.DROP_COL = ['Bulk Density', 'Moisture','Flow', 'Hygroscopicity']
         # we use z-score as our defination, If we set threshold as 3, the yeild great than 120% will be eliminate
         # we also have a np.abs() for smaller outliers, which also affected by this threshold
-        self.YEILD_THRESHOLD = 3
+        # 3 - 130% /  1.5 - 111%   /
+        self.YEILD_THRESHOLD = 1.5
 
