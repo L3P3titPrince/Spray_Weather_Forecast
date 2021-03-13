@@ -46,7 +46,12 @@ class HyperParamters(object):
         self.PRODUCT_DROP = ['Bulk Density', 'Moisture','Flow', 'Hygroscopicity']
 
         # these are the un-related columns in weather data
-        self.WEATHER_DROP = ['dt_iso', 'timezone', '']
+        # ['timezone'] will change from -18000 to -14400 because winter time to summer time, vsia. We can delete it
+        self.WEATHER_DROP = ['dt_iso', 'timezone', 'city_name', 'lat', 'lon']
+        # These columns are non-numerical data, if we need use these columns, we can add them back,
+        # for now, I will delete them in this hyperparameters
+        # self.WEATHER_DROP = ['dt_iso', 'timezone', 'city_name', 'lat', 'lon',
+        #                      'weather_id', 'weather_main', 'weather_description', 'weather_icon']
 
         # we use z-score as our defination, If we set threshold as 3, the yeild great than 120% will be eliminate
         # we also have a np.abs() for smaller outliers, which also affected by this threshold

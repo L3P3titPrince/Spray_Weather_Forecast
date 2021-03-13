@@ -40,6 +40,30 @@ class PreProcess(HyperParamters):
 
         return series_est
 
+    def tz_y_m_d(self, ts):
+        """:arg
+        We use this function to convert Timestamp to year/quarter/month/day
+
+        Args:
+        ------
+        ts:pd.Timestamp
+            ['dt_est']
+
+        Returns:
+        -------
+        year:int
+        quarter:int
+        month:int
+        day:int
+        """
+        year = ts.year
+        quarter = ts.quarter
+        month = ts.month
+        day = ts.day
+
+        return year, quarter, month, day
+
+
     def round_to_hour(self,timestamp):
         """
         We notice df_product['StartDat'] is string type not DataFrame.timestamp.
@@ -157,19 +181,6 @@ class PreProcess(HyperParamters):
         start_time = time()
 
         class_eda = EDA()
-        #***************Drop non-realted columns**********************
-        # *************Drop by columns**************
-        # ['Bulk Density'] have 50% missing data
-        df_product = df_product.drop(self.PRODUCT_DROP, axis=1)
-        print("In Production sheet, these columns have been dropped {}".format(self.PRODUCT_DROP))
-        # Drop un-related colunms from weather data
-        df_nj_weather = df_nj_weather.drop
-        # some weather data might also need clearn
-        list_missing_nj = class_eda.missing_plot(df_nj_weather)
-        df_nj_weather = df_nj_weather.drop(list_missing_nj, axis = 1)
-        list_missing_pa = class_eda.missing_plot(df_pa_weather)
-        df_pa_weather = df_pa_weather.drop(list_missing_pa, axis = 1)
-        #******************End************************************
 
 
         #**************Convert all time into same timestamp format***************************
@@ -179,15 +190,40 @@ class PreProcess(HyperParamters):
         # convert weather data ['dt'] (unix time) to Eastern Stardard Time(EST)
         # pass an argument(series) to function tz_convert()
         df_nj_weather['dt_est'] = df_nj_weather['dt'].apply(self.tz_convert)
+        # according to Timestamp split into year, quarter, month and day for further merge action
+        df_nj_weather['year'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[0])
+        df_nj_weather['quarter'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[1])
+        df_nj_weather['month'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[2])
+        df_nj_weather['day'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[3])
         # another way to use apply()
         # df_nj_weather['dt_est'] = df_nj_weather['dt'].apply(lambda x: pd.TimeStamp(x, unit='s', tz='America/New_York'))
         df_pa_weather['dt_est'] = df_pa_weather['dt'].apply(self.tz_convert)
+        # according to Timestamp split into year, quarter, month and day for further merge action
+        df_pa_weather['year'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[0])
+        df_pa_weather['quarter'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[1])
+        df_pa_weather['month'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[2])
+        df_pa_weather['day'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[3])
         # for merge purpose, make sure two column have same name
         df_product['dt_est'] = df_product['StartDate'].apply(self.round_to_hour)
         #***********************End***************************************************
 
 
-        #*************Drop missing data********************************
+        #***************Drop non-realted columns**********************
+        # *************Drop by columns**************
+        # ['Bulk Density'] have 50% missing data
+        df_product = df_product.drop(self.PRODUCT_DROP, axis=1)
+        print("In Production sheet, these columns have been dropped {}".format(self.PRODUCT_DROP))
+        # Drop un-related colunms from weather data
+        df_nj_weather = df_nj_weather.drop(self.WEATHER_DROP, axis = 1)
+        # some weather data might also need clearn
+        list_missing_nj = class_eda.missing_plot(df_nj_weather)
+        df_nj_weather = df_nj_weather.drop(list_missing_nj, axis = 1)
+        list_missing_pa = class_eda.missing_plot(df_pa_weather)
+        df_pa_weather = df_pa_weather.drop(list_missing_pa, axis = 1)
+        #******************End************************************
+
+
+        #***********************Drop missing data********************************
         list_col_missing_product = class_eda.missing_plot(df_product)
         #**************Drop by rows**********************
         # we get the name of columns that has missing value from eda part
@@ -201,9 +237,12 @@ class PreProcess(HyperParamters):
         # we might need automate generate outlier by some EDA() models
         str_col='YieldPercentage'
         df_product, df_outlier = self.del_outlier(df_product, str_col, abs=False)
+        #*****************************End**********************
 
-
-
+        #****************Adidtional modified*********************
+        # we have a few small changes based on some inputing error
+        # For example ['Food Addit'] == ['Food Additive']
+        df_product.loc[df_product['ProdLine'] == 'Food Addit', 'ProdLine'] = 'Food Additive'
 
 
         cost_time = round((time() - start_time), 4)

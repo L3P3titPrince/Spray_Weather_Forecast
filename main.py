@@ -26,11 +26,11 @@ def main():
     # if you need use self.df_multi in the next line, you need call function to product self.multi first
     df_multi = class_merge.row_proliferate(df_product)
     # identify this is only belong to
-    df_nj_loc, df_pa_loc = class_merge.merge_location(df_product, df_nj_weather, df_pa_weather)
+    df_nj, df_pa = class_merge.merge_location(df_product, df_nj_weather, df_pa_weather)
 
 
     return (df_product, df_nj_weather, df_pa_weather, df_dropped, df_outlier,
-            df_multi, df_nj_loc, df_pa_loc,)
+            df_multi, df_nj, df_pa,)
 
 
 
@@ -39,6 +39,6 @@ if __name__=="__main__":
     
     """
     (df_product, df_nj_weather, df_pa_weather, df_dropped, df_outlier,
-     df_multi, df_nj_loc, df_pa_loc,) = main()
+     df_multi, df_nj, df_pa,) = main()
 
     print("OVER")

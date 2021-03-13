@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 # for time sum()
 import datetime
+from time import time
 
 class MergeData(HyperParamters):
     """:arg
@@ -43,6 +44,9 @@ class MergeData(HyperParamters):
             Inhereit production information from df_product, so its a production df with ['dt_est'] hours proliferate
             All other function in this class wiil need call this variable to merge
         """
+        print("*" * 50, "Start row_proliferate()", "*" * 50)
+        start_time = time()
+
         # first create a new column ['hours'] from ['DryingTime_Hrs'] round to bigger integer
         df_product['hours'] = np.ceil(df_product['DryingTime_Hrs']).astype(int)
         # Second, repeat each records/rows by ['hours'] times
@@ -74,10 +78,16 @@ class MergeData(HyperParamters):
         # Identify location by ['Batchnumber']
         df_nj_product = self.df_multi[self.df_multi['BatchNumber'].str.contains('NJ', regex=False)]
         # them merge them into a new DataFrame
-        df_nj = pd.merge(df_nj_product, df_nj_weather, how='left', on=['dt_est'])
+        # after merge, we find a situation, df_nj_product.shape=(102385,6) df_nj.shape=(108907,31)
+        # after I check indicator, they are exist in both dataset,
+        # In some day, it should only have 24 records by each hours. But if there is some weather condition mixed up
+        # for example, at Jan/23/2016, we got 39 records in one day, because most of time mix snow and frog
+        # so the extract rows are from these dual weather condition, which only different in ['weather_id']
+        df_nj = pd.merge(df_nj_product, df_nj_weather, how='left', on=['dt_est'], indicator=True)
         # merge with self.df_multi and got a new NJ_Production DataFrame
         df_pa_pro = self.df_multi[self.df_multi['BatchNumber'].str.contains('PA', regex=False)]
         # then merge
-        df_pa = pd.merge(df_pa_pro, df_pa_weather, how='left', on=['dt_est'])
+        df_pa = pd.merge(df_pa_pro, df_pa_weather, how='left', on=['dt_est'], indicator=True)
 
         return df_nj, df_pa
+
