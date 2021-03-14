@@ -60,3 +60,7 @@ class EDA(HyperParamters):
         # print(col_missing_value, type(col_missing_value))
 
         return col_missing_value
+
+
+    def bar_chart_race(self):
+        return None

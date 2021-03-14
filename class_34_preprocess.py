@@ -114,7 +114,7 @@ class PreProcess(HyperParamters):
         return df_clean, df_dropped
 
 
-    def del_outlier(self, df, str_col, abs=False):
+    def z_outlier(self, df, str_col, z_threshold  = 3, abs=False):
         """
         We use z-score to delete outliers in our data. for example ['YieldPrecentage'] and ['Rate']
         When ads=True, it will delete smallest and biggest outliers.
@@ -147,9 +147,9 @@ class PreProcess(HyperParamters):
         # filter that ooutlier rows in dataframe
         # index_outlier = np.where(z_score > z_threshold, z_score)
         # get the index of these outliers
-        index_outlier = df[z_score > self.YEILD_THRESHOLD].index
+        index_outlier = df[z_score > z_threshold].index
         # restore these outliers in df_outlier for further review
-        df_outlier = df.loc[index_outlier]
+        df_outlier = df.loc[index_outlier,:]
         print('We have {} data points are outliers, which between {} and {}'.format(len(index_outlier),
                                                                                     df_outlier[str_col].min(),
                                                                                     df_outlier[str_col].max()))
@@ -159,6 +159,44 @@ class PreProcess(HyperParamters):
                                                                                         df_clean[str_col].min(),
                                                                                         df_clean[str_col].max()))
         return df_clean, df_outlier
+
+
+
+    def iqr_outlier(self, df, str_col, iqr_threshold=3):
+        """:arg
+        Except z-socre, we also have also have 'Interquartile Range Method' to deal with non-Gaussian distribution
+
+        Args:
+        -----
+        df:pd.DataFrame
+
+        """
+        print('Start using IQR to eliminate outliers.')
+        # caculate interquartile range
+        q75, q25 = np.percentile(df[str_col], 75), np.percentile(df[str_col], 25)
+        # IQR can be used to identify outliers by defining limits on the sample values that are a factore k
+        iqr = q75 - q25
+        # of the IQR below the 25th percentile or above the 75th percentile. The commmon value of k is 1.5
+        # A factor k of 3 or more can be used to identify values that are extrmel outliers
+        cut_off = iqr * iqr_threshold
+        # get the lower bound and upper bound
+        lower_bound, upper_bound = q25-cut_off, q75+cut_off
+        # so we can use these bounds to identify outliers and remaining data
+        df_outlier = df.loc[(df[str_col]>upper_bound) | (df[str_col]<lower_bound)]
+        print('In {} column using {} as threshold'.format(str_col,iqr_threshold))
+        print('We have {} data points are outliers, which between {} and {}'.format(len(df_outlier.shape[0]),
+                                                                                    df_outlier[str_col].min(),
+                                                                                    df_outlier[str_col].max()))
+        # then we calculate filter out outlers result
+        df_clean = df.loc[(df[str_col]<upper_bound) & (df[str_col]>lower_bound)]
+        print("After drop outlier, the {} column remain range between {} and {}".format(str_col,
+                                                                                        df_clean[str_col].min(),
+                                                                                        df_clean[str_col].max()))
+
+        print('Complete IQR eliminate outliers Function.')
+
+        return df_clean, df_outlier
+
 
 
     def clean_data(self, df_product, df_nj_weather, df_pa_weather):
@@ -236,13 +274,44 @@ class PreProcess(HyperParamters):
         # we need to drop outliers in some necessary columns
         # we might need automate generate outlier by some EDA() models
         str_col='YieldPercentage'
-        df_product, df_outlier = self.del_outlier(df_product, str_col, abs=False)
+        df_product, df_outlier = self.z_outlier(df_product, str_col, z_threshold = self.YEILD_THRESHOLD, abs=False)
+        # ['Rate'] data have a lot of extramly large data. According to human judgement, >2000 might be delete.
+        # But when we use statistical method to testify our data
+
         #*****************************End**********************
 
-        #****************Adidtional modified*********************
+
+        #********************Adidtional modified*****************************
         # we have a few small changes based on some inputing error
         # For example ['Food Addit'] == ['Food Additive']
         df_product.loc[df_product['ProdLine'] == 'Food Addit', 'ProdLine'] = 'Food Additive'
+        # PA only proedure food related (non-Fragance) kind custome material
+        # we find a record in PA location index=3299, Batchnumber = PASD340354
+        # It could be correct record but for now we delete this line
+        ind=df_product[(df_product['ProdLine'] == 'Fragrance') & (df_product['BatchNumber'].str.contains('PA'))].index
+        # we can use former index to drop, beacuse it's two long for one line code.
+        df_product.drop(index=ind, inplace=True)
+
+        # when we deal with product data, we find some dryer in the wrong location.
+        # Generally, NJ has Dryer 01 -04, PA has Dryer 06-11.
+        # For index=7491, BatchNumber ='NJSD362799' this records originally palced in NJ and then swithed over
+        # to be run in PA. Typically, Spray-Tek protocal is cancel the NJ order and re-submit it as a PA order
+        # In this records, the NJ order was not cancelled. The dyer number is accurate and the location is incorrect
+        df_nj_1 = df_product[df_product['BatchNumber'].str.contains('NJ')]
+        # then we find the index of these error recording columns
+        idx_1 = df_nj_1.loc[(df_nj_1['Dryer'] == 'Dryer 06') | (df_nj_1['Dryer'] == 'Dryer 09')].index
+        # idx_1 = df_nj_1.loc[df_nj_1['Dryer'].isin(['Dryer 06','Dryer 09'])].index
+        # The best way to replace/assign value is use .loc[] to locate and then assign new value 'PA000'
+        df_product.loc[idx_1, 'BatchNumber'] = 'PA000'
+        # vice-versa, we find Dryer01 in PA, it should be in NJ
+        # there index=(2761, 3245), BatchNumber=('PASD337379', 'PASD337014')
+        df_pa_1 = df_product[df_product['BatchNumber'].str.contains('PA')]
+        idx_2 = df_pa_1.loc[(df_pa_1['Dryer'] == 'Dryer 01')].index
+        df_product.loc[idx_2, 'BatchNumber'] = 'NJ000'
+        # anthoer way, If you want to assign multi-values to a pd.Series, the other head also should be pd.Serise
+        # df_product.loc[idx_2, 'BatchNumber'] = df_product.loc[idx_2, 'BatchNumber'].map(lambda x: 'NJ111').values
+
+        #*************************End**********************************************
 
 
         cost_time = round((time() - start_time), 4)

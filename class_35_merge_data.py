@@ -68,6 +68,9 @@ class MergeData(HyperParamters):
         self.df_multi['hour_add'] = self.df_multi['hour_add'].apply(self.convert_timedelta)
         self.df_multi['dt_est'] = self.df_multi['dt_est'] + self.df_multi['hour_add']
 
+        cost_time = round((time() - start_time), 4)
+        print("*" * 40, "End row_proliferate() with {} second".format(cost_time), "*" * 40, end='\n\n')
+
         return self.df_multi
 
 
