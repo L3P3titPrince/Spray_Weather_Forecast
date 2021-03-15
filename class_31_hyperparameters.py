@@ -73,5 +73,5 @@ class HyperParamters(object):
         # If we shrink our threshold to a small number, we will delete more outliers. But they might not be delete so early
         # For example, in index ['821', '2983','2999'] after manually double chek, they are operation error.
         # We can't do this to every ['Rate'] outliers. So we can do this drop process only for statiscal visulzation
-        self.IQR_THRESHOLD = 3
+        self.IQR_THRESHOLD = 2
 
