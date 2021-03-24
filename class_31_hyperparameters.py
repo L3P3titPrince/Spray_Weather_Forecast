@@ -75,3 +75,8 @@ class HyperParamters(object):
         # We can't do this to every ['Rate'] outliers. So we can do this drop process only for statiscal visulzation
         self.IQR_THRESHOLD = 2
 
+        # using two sigma and three sigma to delete those extramlly higher ['Rate']
+        # two sigma will CDF = 95%, for each on side, it will be 2.5%
+        self.TWO_SIGMA = 2.5
+        # if we don't want delete less rows, we can use three sigma, it will only delete approcimate 30 rows.
+        # self.THREE_SIGMA = 0.3

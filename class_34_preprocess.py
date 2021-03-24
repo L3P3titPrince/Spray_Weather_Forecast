@@ -41,7 +41,10 @@ class PreProcess(HyperParamters):
         return series_est
 
     def tz_y_m_d(self, ts):
-        """:arg
+        """
+        ******************This function is not use anymore*******************
+        ******************This function is not use anymore*******************
+        ******************This function is not use anymore*******************
         We use this function to convert Timestamp to year/quarter/month/day
 
         Args:
@@ -60,9 +63,25 @@ class PreProcess(HyperParamters):
         quarter = ts.quarter
         month = ts.month
         day = ts.day
+        hour = ts.hour
+        dt_date = ts.date()
+        return year, quarter, month, day, hour, dt_date
 
-        return year, quarter, month, day
+    def convert_yymmdd(self, df:pd.DataFrame, col_name):
+        """
+        extract year/quarter/month/day from timestamp and add to new column
 
+        col_name:string
+            It should be a TimeStamp column like ['dt_est']
+        """
+        df.loc[:, 'year'] = df[col_name].apply(lambda x: x.year)
+        df.loc[:, 'quarter'] = df[col_name].apply(lambda x: x.quarter)
+        df.loc[:, 'month'] = df[col_name].apply(lambda x: x.month)
+        df.loc[:, 'day'] = df[col_name].apply(lambda x: x.day)
+        df.loc[:, 'hour'] = df[col_name].apply(lambda x: x.hour)
+        df.loc[:, 'dt_date'] = df[col_name].apply(lambda x: x.date())
+
+        return df
 
     def round_to_hour(self,timestamp):
         """
@@ -113,16 +132,18 @@ class PreProcess(HyperParamters):
             # if abs=True, we will absolute z-score and find the both side outliers
             z_score = np.abs(stats.zscore(df[str_col], nan_policy='omit'))
             print("We will drop too large and too small outliers")
+            index_outlier = df[z_score > z_threshold].index
         else:
             # if abs=False (default setting), we only delete the too large outlers
             z_score = stats.zscore(df[str_col], nan_policy='omit')
             print("we will only drop too large outliers")
+            index_outlier = df[(z_score > z_threshold) | (z_score < -z_threshold)].index
         # set a z-score threshold, any greater than this value will be eliminate
         # z_threshold = 3
         # filter that ooutlier rows in dataframe
         # index_outlier = np.where(z_score > z_threshold, z_score)
         # get the index of these outliers
-        index_outlier = df[z_score > z_threshold].index
+        # index_outlier = df[z_score > z_threshold].index
         # restore these outliers in df_outlier for further review
         df_outlier = df.loc[index_outlier,:]
         print('We have {} data points are outliers, which between {} and {}'.format(len(index_outlier),
@@ -162,6 +183,9 @@ class PreProcess(HyperParamters):
         print('We have {} data points are outliers, which between {} and {}'.format(df_outlier.shape[0],
                                                                                     df_outlier[str_col].min(),
                                                                                     df_outlier[str_col].max()))
+        print("Before drop outlier, the {} column remain range between {} and {}".format(str_col,
+                                                                                         df[str_col].min(),
+                                                                                         df[str_col].max()))
         # then we calculate filter out outlers result
         df_clean = df.loc[(df[str_col]<upper_bound) & (df[str_col]>lower_bound)]
         print("After drop outlier, the {} column remain range between {} and {}".format(str_col,
@@ -212,18 +236,24 @@ class PreProcess(HyperParamters):
         # pass an argument(series) to function tz_convert()
         df_nj_weather['dt_est'] = df_nj_weather['dt'].apply(self.tz_convert)
         # according to Timestamp split into year, quarter, month and day for further merge action
-        df_nj_weather['year'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[0])
-        df_nj_weather['quarter'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[1])
-        df_nj_weather['month'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[2])
-        df_nj_weather['day'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[3])
+        df_nj_weather = self.convert_yymmdd(df_nj_weather, col_name='dt_est')
+        # df_nj_weather['year'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[0])
+        # df_nj_weather['quarter'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[1])
+        # df_nj_weather['month'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[2])
+        # df_nj_weather['day'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[3])
+        # df_nj_weather['hour'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[4])
+        # df_nj_weather['dt_date'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[5])
         # another way to use apply()
         # df_nj_weather['dt_est'] = df_nj_weather['dt'].apply(lambda x: pd.TimeStamp(x, unit='s', tz='America/New_York'))
         df_pa_weather['dt_est'] = df_pa_weather['dt'].apply(self.tz_convert)
         # according to Timestamp split into year, quarter, month and day for further merge action
-        df_pa_weather['year'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[0])
-        df_pa_weather['quarter'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[1])
-        df_pa_weather['month'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[2])
-        df_pa_weather['day'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[3])
+        df_pa_weather = self.convert_yymmdd(df_pa_weather, col_name='dt_est')
+        # df_pa_weather['year'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[0])
+        # df_pa_weather['quarter'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[1])
+        # df_pa_weather['month'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[2])
+        # df_pa_weather['day'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[3])
+        # df_pa_weather['hour'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[4])
+        # df_pa_weather['dt_date'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[5])
         # for merge purpose, make sure two column have same name
         df_product['dt_est'] = df_product['StartDate'].apply(self.round_to_hour)
         # ***********************End***************************************************
@@ -245,6 +275,7 @@ class PreProcess(HyperParamters):
         print("In Production sheet, these columns have been dropped {}".format(self.PRODUCT_DROP))
         # Drop un-related colunms from weather data
         df_nj_weather = df_nj_weather.drop(self.WEATHER_DROP, axis=1)
+        df_pa_weather = df_pa_weather.drop(self.WEATHER_DROP, axis=1)
         # some weather data might also need clearn
         list_missing_nj = class_eda.missing_plot(df_nj_weather)
         # axis=0/index axis=1/columns
@@ -257,6 +288,15 @@ class PreProcess(HyperParamters):
 
     def drop_outlier(self, df_product):
         """:arg
+        For now we only drop outlier on df_prodcut. Weather data are not involved yet.
+        Actually, we can find that ['Humidity'] is fit normal distribution perfectlly
+
+        Args:
+        -------
+        df_product:DataFrame
+            After dropping columns and rows, we can not drop outliers
+        Returns:
+        -------
 
         """
         #*****************Drop by outliers****************
@@ -266,12 +306,21 @@ class PreProcess(HyperParamters):
         str_col='YieldPercentage'
         df_product, df_outlier_1 = self.z_outlier(df_product, str_col, z_threshold = self.YEILD_THRESHOLD, abs=False)
         # ['Rate'] data have a lot of extramly large data. According to human judgement, >2000 might be delete.
+        # Before we use z-score we can use two sigma range to only restore CDF locate in 95%
+        q_lower = np.percentile(df_product['Rate'], self.TWO_SIGMA)
+        q_upper = np.percentile(df_product['Rate'], (100-self.TWO_SIGMA))
+        print("Any data smaller than {} and greater than {} will be eliminate".format(q_lower, q_upper))
+        # we want to restore these delete column for double check
+        df_outlier_2 = df_product.loc[(df_product['Rate']>q_upper) | (df_product['Rate']<q_lower)]
+        print('There are {} rows identified as extramlly outliers'.format(df_outlier_1.shape[0]))
+        # If we use two sigma, we will directly delete data smaller than 8.1 and greater than 975
+        df_product = df_product.loc[(df_product['Rate']<q_upper) & (df_product['Rate']>q_lower)]
         # But when we use statistical method to testify our data outliers
         # In z-score function, if we set value to 3, ['Rate']>1275 row=3 will be delete
         # if we set value to 2, ['Rate']>973 row=247 will be delete
-        df_product, df_outlier_2 = self.z_outlier(df_product, 'Rate', z_threshold = self.IQR_THRESHOLD, abs=False)
+        df_product, df_outlier_3 = self.z_outlier(df_product, 'Rate', z_threshold = self.IQR_THRESHOLD, abs=True)
         # concate outliers into one data frame
-        frames = [df_outlier_1, df_outlier_2]
+        frames = [df_outlier_1, df_outlier_2, df_outlier_3]
         df_outlier = pd.concat(frames)
         #*****************************End**********************
 

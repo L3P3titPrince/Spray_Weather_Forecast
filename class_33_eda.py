@@ -62,5 +62,105 @@ class EDA(HyperParamters):
         return col_missing_value
 
 
-    def bar_chart_race(self):
-        return None
+    def bcr_dryer(self, df_product, df_nj_weather, df_pa_weather):
+        """
+        This fucntion used for bar_chart_race library data reconstruction.
+        This function will present the relationship between ['Dryer'] and time
+
+        https://www.wikihow.com/Install-FFmpeg-on-Windows
+
+        Args:
+        -----
+        df_product:pd.DataFrame
+            We into
+
+        Returns:
+        ------
+        df
+        """
+        # due to format unification, we need transform ['dt_date'] to its string type
+        df_nj_weather.loc[:, ('str_date')] = df_nj_weather['dt_date'].apply(lambda x: x.strftime('%Y-%m-%d'))
+        df_pa_weather.loc[:, ('str_date')] = df_pa_weather['dt_date'].apply(lambda x: x.strftime('%Y-%m-%d'))
+
+        # direct merge on ['dt_est'] without split each row to several hours rows
+        # because we only care about its accumualte results, so just extract combination of location and time
+        df_nj = pd.merge(df_product, df_nj_weather, on=['dt_est'], how='left')
+        df_pa = pd.merge(df_product, df_pa_weather, on=['dt_est'], how='left')
+
+
+        # ***********This part logic have some problem, we need delete duplicate from weather first ************
+        # in same day, it might have two weather condition, so when you merge data, it will appear duplicate records
+        # we know it will be duplicate when we merge with product data because some duplicate weather data
+        print('Before drop duplicate, {}, {}'.format(df_nj.shape, df_pa.shape))
+        # ['StartDate'] is unipue, other columns more or less contain same records
+        # we keep the first records and directly do this action on current DataFrame
+        df_nj.drop_duplicates(subset=['StartDate'], keep='first', inplace=True)
+        df_pa.drop_duplicates(subset=['StartDate'], keep='first', inplace=True)
+        print('After drop duplicate, {}, {}'.format(df_nj.shape, df_pa.shape))
+
+
+        # extract each dryer from df_product
+        df_01 = df_nj.loc[df_nj['Dryer'] == 'Dryer 01']
+        df_02 = df_nj.loc[df_nj['Dryer'] == 'Dryer 02']
+        df_03 = df_nj.loc[df_nj['Dryer'] == 'Dryer 03']
+        df_04 = df_nj.loc[df_nj['Dryer'] == 'Dryer 04']
+        df_06 = df_pa.loc[df_pa['Dryer'] == 'Dryer 06']
+        df_07 = df_pa.loc[df_pa['Dryer'] == 'Dryer 07']
+        df_08 = df_pa.loc[df_pa['Dryer'] == 'Dryer 08']
+        df_10 = df_pa.loc[df_pa['Dryer'] == 'Dryer 10']
+
+        # in each day, there might be several orders in one dryer, so we need to sum one day data into one row
+        series_01_cum = df_01.groupby(by=['str_date'])['ActualDryQty'].sum().cumsum()
+        series_02_cum = df_02.groupby(by=['str_date'])['ActualDryQty'].sum().cumsum()
+        series_03_cum = df_03.groupby(by=['str_date'])['ActualDryQty'].sum().cumsum()
+        series_04_cum = df_04.groupby(by=['str_date'])['ActualDryQty'].sum().cumsum()
+        series_06_cum = df_06.groupby(by=['str_date'])['ActualDryQty'].sum().cumsum()
+        series_07_cum = df_07.groupby(by=['str_date'])['ActualDryQty'].sum().cumsum()
+        series_08_cum = df_08.groupby(by=['str_date'])['ActualDryQty'].sum().cumsum()
+        series_10_cum = df_10.groupby(by=['str_date'])['ActualDryQty'].sum().cumsum()
+
+        # create a new time base DataFrame for next step merge with time range and type=datetime.time
+        df_base = pd.DataFrame(data=pd.date_range(start='1/2/2016', end='12/31/2020'), columns=['dt'])
+        # because next step we need to merge and using bar_race_chart librayr,
+        # so we tranform date into same format and type and restore into new column ['str_date']
+        df_base.loc[:, ('str_date')] = df_base['dt'].apply(lambda x: x.strftime('%Y-%m-%d'))
+        # in brc() library, it use time (string type) as index
+        df_base = df_base.set_index('str_date')
+        # concatnate data by columns, so rows is time index from df_base with everyday for these 5 years
+        # for each dryers, it might have someday don't work
+        df_bcr = pd.concat([df_base, series_01_cum], axis=1)
+        df_bcr = pd.concat([df_bcr, series_02_cum], axis=1)
+        df_bcr = pd.concat([df_bcr, series_03_cum], axis=1)
+        df_bcr = pd.concat([df_bcr, series_04_cum], axis=1)
+        df_bcr = pd.concat([df_bcr, series_06_cum], axis=1)
+        df_bcr = pd.concat([df_bcr, series_07_cum], axis=1)
+        df_bcr = pd.concat([df_bcr, series_08_cum], axis=1)
+        df_bcr = pd.concat([df_bcr, series_10_cum], axis=1)
+        # only reserve dryers columns
+        df_bcr.drop(labels=['dt'], axis=1, inplace=True)
+        df_bcr.columns = ['Dryer 01', 'Dryer 02', 'Dryer 03', 'Dryer 04', 'Dryer 06', 'Dryer 07', 'Dryer 08',
+                          'Dryer 10']
+        # this is used to fullfill with contiuous data in days that dryers dont' have task
+        df_bcr = df_bcr.interpolate()
+        # full fill some early day, like 01/01/2016, that interpolate() can't full fill
+        df_bcr.fillna(0, inplace=True)
+        # it's more easy to read file and start processing to movies
+        df_bcr.to_csv('03_data/27_bcr.csv', index=True)
+
+        # because each row is already start from on day, so we can directly use ['ActualDrayQty'] to cumulate sum
+        #     df_01.loc[:,('cumsum')] = df_01['ActualDryQty'].cumsum()
+        #     df_02.loc[:,('cumsum')] = df_02['ActualDryQty'].cumsum()
+
+        #     df_20 = pd.DataFrame(data=[df_14['dt_date'], df_14['cumsum']])
+        #     df_21 = df_20.T
+        #     df_21['str_date'] = df_21['dt_date'].apply(lambda x:x.strftime('%Y-%m-%d'))
+        #     df_22 = df_21.set_index('str_date')
+
+        #     # merge
+        #     df_bcr = pd.merge(df_base, df_01, on=['str_date'], how='left')
+        #     df_bcr = pd.merge(df_bc)
+
+        # create a new DataFrame for  bar_race_chart
+        #     df_bcr = pd.DataFrame()
+
+        return df_base, df_bcr

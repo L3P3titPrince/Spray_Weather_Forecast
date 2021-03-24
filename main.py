@@ -4,6 +4,8 @@ from class_34_preprocess import PreProcess
 from class_33_eda import EDA
 from class_35_merge_data import MergeData
 
+import bar_chart_race as bcr
+
 def main():
     """
     We use this function to call process one by one.
@@ -12,7 +14,8 @@ def main():
 
     # ***********************import******************************
     class_import = ImportData()
-    # df_product, df_nj_weather, df_pa_weather = class_import.import_data()
+    # If you don't have csv file, you should run this line first. Reading csv is more quick than excel
+    # df_product_1, df_nj_weather_1, df_pa_weather_1 = class_import.import_data()
     df_product_1, df_nj_weather_1, df_pa_weather_1 = class_import.read_csv()
 
     # **************************EDA***************************
@@ -40,10 +43,27 @@ def main():
                                                                             df_nj_weather_3,
                                                                             df_pa_weather_3)
 
+    # **********************WARNING*****************************
+    # **********************WARNING*****************************
+    # we should not add this code in final code, but we can temperaoly delete ['Rate']<20 for statistical result
+    # Because running ['Rate'] might related to Dryer size. So we delete Dryer09 temporary
+    df_product_6 = df_product_6.loc[df_product_6['Dryer']!='Dryer 09']
+    df_product_6 = df_product_6.loc[df_product_6['Rate']>20]
+    # **********************WARNING****************************
+    # **********************WARNING****************************
 
     # df_product, df_nj_weather, df_pa_weather, df_dropped, df_outlier = class_pre.clean_data(df_raw_product,
     #                                                                                         df_raw_nj_weather,
     #                                                                                         df_raw_pa_weather)
+
+
+    # *********************EDA*******************************
+    # 1. Bar_Race_Chart
+    # df_base, df_bcr= class_eda.bcr_dryer(df_product_6, df_nj_weather_6, df_pa_weather_6)
+    # # we can also read it from files
+    # # df_bcr = pd.read_csv('03_data/27_bcr.csv', index_col=0)
+    # bcr_html = bcr.bar_chart_race(df=df_bcr.head(10), filename='30.mp4')
+
 
     #*******************3.5 MergeDate************************
     class_merge = MergeData()

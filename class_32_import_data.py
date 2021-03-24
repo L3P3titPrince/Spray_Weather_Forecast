@@ -48,10 +48,14 @@ class ImportData(HyperParamters):
         # this new data missing rate, so we have to import old data and merge ['Rate'] to our new data
         old_product = os.path.join(self.ROOTPATH, '017_20160101_20201231_ProductionData.xlsx')
         df_old = pd.read_excel(old_product, sheet_name = '20160101_20201231_ProductionDat')
+        # in this version data provided by customer, it didn't have ['Rate'] column
         df_product['Rate'] = df_old['Rate']
+        # We need a sign for identifacation for each records.
+        # We can use current index to generate a new column called ['Index_ID'] for our key schema/value
+        # df_product['Index_ID'] = df_product.index
 
-        # save
-        df_product.to_csv('03_data/20_production.csv',index=False)
+        # save product with first column as index ['Unname 0']
+        df_product.to_csv('03_data/20_production.csv',index=True)
         df_nj_weather.to_csv('03_data/21_nj_weather.csv', index=False)
         df_pa_weather.to_csv('03_data/22_pa_weather.csv', index=False)
 
@@ -66,6 +70,8 @@ class ImportData(HyperParamters):
         import_data() function.
         """
         df_product = pd.read_csv('03_data/20_production.csv')
+        # change the first column as our identical featuers
+        df_product.rename(columns={'Unnamed: 0': 'Index_ID'}, inplace=True)
         df_nj_weather = pd.read_csv('03_data/21_nj_weather.csv')
         df_pa_weather = pd.read_csv('03_data/22_pa_weather.csv')
 
