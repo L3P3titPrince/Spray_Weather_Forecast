@@ -56,13 +56,13 @@ class MergeData(HyperParamters):
         # Thrid, adjust ['hours'] to ascending rank model, for instance, [3,3,3] to [0,1,2]
         # this is used for next step add to ['dt_est'] time
         # groupby each old record, for instance, for first records, groupby will be a three row table
-        # for second records, groupby['StartData'] will be a nine row table
+        # for second records, groupby['Index_ID'],which is identical label (key schema),  will be a nine row table
         # Then, extract ['hours'] column, for each pd.Series, apply a fomulation
         # addition, in here, ['hours'] will not be a single row, instead, it will be a three element Series
         # for this three/nine series, we cacualte their cumulation sum cumsum() [3,3,3] will be [3,6,9]
         # for instance [9.9.9.9...9] will be [9,18,27,,,,81]
         # and we divide by ['hours'] count, which will be [3,9,...], last minute 1 to get a column for timestamp add
-        self.df_multi['hour_add'] = self.df_multi.groupby(['StartDate'])['hours'].apply(lambda x:x.cumsum()/x.count())-1
+        self.df_multi['hour_add'] = self.df_multi.groupby(['Index_ID'])['hours'].apply(lambda x:x.cumsum()/x.count())-1
         # our weather segmentation is one hour
         # one_hour = datetime.timedelta(hours = 1)
         self.df_multi['hour_add'] = self.df_multi['hour_add'].apply(self.convert_timedelta)
@@ -88,9 +88,9 @@ class MergeData(HyperParamters):
         # so the extract rows are from these dual weather condition, which only different in ['weather_id']
         df_nj = pd.merge(df_nj_product, df_nj_weather, how='left', on=['dt_est'], indicator=True)
         # merge with self.df_multi and got a new NJ_Production DataFrame
-        df_pa_pro = self.df_multi[self.df_multi['BatchNumber'].str.contains('PA', regex=False)]
+        df_pa_product = self.df_multi[self.df_multi['BatchNumber'].str.contains('PA', regex=False)]
         # then merge
-        df_pa = pd.merge(df_pa_pro, df_pa_weather, how='left', on=['dt_est'], indicator=True)
+        df_pa = pd.merge(df_pa_product, df_pa_weather, how='left', on=['dt_est'], indicator=True)
 
         return df_nj, df_pa
 
