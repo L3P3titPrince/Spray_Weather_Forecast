@@ -3,6 +3,7 @@ from class_32_import_data import ImportData
 from class_34_preprocess import PreProcess
 from class_33_eda import EDA
 from class_35_merge_data import MergeData
+from class_41_feature_engineering import FeatureEngineer
 
 import bar_chart_race as bcr
 
@@ -72,11 +73,17 @@ def main():
     # identify this is only belong to
     df_nj, df_pa = class_merge.merge_location(df_product_6, df_nj_weather_6, df_pa_weather_6)
 
+    #********************4.1 Feature Enginnering**************************
+    class_fe = FeatureEngineer()
+    # using feature_eng() function to produce a new df with new feature per records (not multi records but groupby)
+    df_prod_nj, df_prod_pa = class_fe.feature_eng(df_product_6, df_nj, df_pa)
+
+
 
     return (df_product_1, df_nj_weather_1, df_pa_weather_1, df_product_2, df_nj_weather_2, df_pa_weather_2,
             df_product_3, df_nj_weather_3, df_pa_weather_3, df_product_4, df_product_5, df_dropped, df_outlier,
             df_product_6, df_nj_weather_6, df_pa_weather_6,
-            df_multi, df_nj, df_pa,)
+            df_multi, df_nj, df_pa, df_prod_nj, df_prod_pa)
 
 
 
@@ -87,6 +94,6 @@ if __name__=="__main__":
     (df_product_1, df_nj_weather_1, df_pa_weather_1, df_product_2, df_nj_weather_2, df_pa_weather_2,
      df_product_3, df_nj_weather_3, df_pa_weather_3, df_product_4, df_product_5, df_dropped, df_outlier,
      df_product_6, df_nj_weather_6, df_pa_weather_6,
-     df_multi, df_nj, df_pa,) = main()
+     df_multi, df_nj, df_pa, df_prod_nj, df_prod_pa) = main()
 
     print("OVER")
