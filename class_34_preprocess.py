@@ -221,7 +221,8 @@ class PreProcess(HyperParamters):
         # according to eda result, we got columns name that has missing values
         df_clean = df.dropna(subset=list_col, axis=0)
         print("These {} columns still have missing data".format(list_col))
-        print("After dropping na, {} rows has decreased to {} rows".format(df.shape[0], df_clean.shape[0]))
+        print("After dropping na, {} rows has decreased to {} rows, {} these rows were droppped"
+              .format(df.shape[0], df_clean.shape[0], df_dropped[0]))
 
         return df_clean, df_dropped
 
@@ -237,23 +238,11 @@ class PreProcess(HyperParamters):
         df_nj_weather['dt_est'] = df_nj_weather['dt'].apply(self.tz_convert)
         # according to Timestamp split into year, quarter, month and day for further merge action
         df_nj_weather = self.convert_yymmdd(df_nj_weather, col_name='dt_est')
-        # df_nj_weather['year'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[0])
-        # df_nj_weather['quarter'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[1])
-        # df_nj_weather['month'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[2])
-        # df_nj_weather['day'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[3])
-        # df_nj_weather['hour'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[4])
-        # df_nj_weather['dt_date'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[5])
         # another way to use apply()
         # df_nj_weather['dt_est'] = df_nj_weather['dt'].apply(lambda x: pd.TimeStamp(x, unit='s', tz='America/New_York'))
         df_pa_weather['dt_est'] = df_pa_weather['dt'].apply(self.tz_convert)
         # according to Timestamp split into year, quarter, month and day for further merge action
         df_pa_weather = self.convert_yymmdd(df_pa_weather, col_name='dt_est')
-        # df_pa_weather['year'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[0])
-        # df_pa_weather['quarter'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[1])
-        # df_pa_weather['month'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[2])
-        # df_pa_weather['day'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[3])
-        # df_pa_weather['hour'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[4])
-        # df_pa_weather['dt_date'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[5])
         # for merge purpose, make sure two column have same name
         df_product['dt_est'] = df_product['StartDate'].apply(self.round_to_hour)
         # ***********************End***************************************************
@@ -330,7 +319,12 @@ class PreProcess(HyperParamters):
 
 
     def clean_modify(self, df_product, df_nj_weather, df_pa_weather):
-        """:arg
+        """
+        There ar some error in this database, we need mannuuly modify them
+        1.Change ['Food Addit'] to ['Food Additive']
+        2.delete a record that processed ['Fragrance'] but located in ['PA']
+        3.Modify some records to their correct location
+
         """
         # ********************Adidtional modified*****************************
         # we have a few small changes based on some inputing error
@@ -343,6 +337,22 @@ class PreProcess(HyperParamters):
         # we can use former index to drop, beacuse it's two long for one line code.
         df_product.drop(index=ind, inplace=True)
 
+        # ***********************Drop duplicate records*****************************
+        # In original database, there are two records have duplicated issus.
+        # ['PASD339002'] ['Dryer 08'] duplicated 16 records
+        # ['PASD372411'] ['Dryer 08'] duplicated 16 records
+        # ['PASD376468'] duplicated 2 records
+        # find duplicated rows in production dataset
+        df_dup = df_product[df_product.duplicated(subset=['BatchNumber'])]
+        print("We find {} rows are duplicate. ".format(df_dup.shape[0] ))
+        series_dup = df_dup.groupby(by=['BatchNumber'])['Index_ID'].count()
+        print("For each category, we have {} having {} rows serpately".format(series_dup.index, series_dup.values))
+        # drop them
+        df_product.drop_duplicates(subset=['BatchNumber'], inplace=True)
+
+
+
+        # *************Wrong location Modification******************
         # when we deal with product data, we find some dryer in the wrong location.
         # Generally, NJ has Dryer 01 -04, PA has Dryer 06-11.
         # For index=7491, BatchNumber ='NJSD362799' this records originally palced in NJ and then swithed over
@@ -366,130 +376,4 @@ class PreProcess(HyperParamters):
         return df_product, df_nj_weather, df_pa_weather
 
 
-
-
-    def clean_data(self, df_product, df_nj_weather, df_pa_weather):
-        """:arg
-        Delete columns we believe didn't use in the future.
-
-        Args:
-        --------
-        df_product:DataFrame
-
-        Returns:
-        --------
-        df_product:DataFrame
-            droped missing value, add a new column['dt_est'] for merge purpose
-        df_nj_weather:DataFrame
-            cleaned DataFrame table
-
-        """
-        print("*" * 50, "Start clean_data()", "*" * 50)
-        start_time = time()
-
-        class_eda = EDA()
-
-
-        #**************Convert all time into same timestamp format***************************
-        # It should clean data first by columns then by rows, but missing data will appear when you convert time
-        # From out put, we can now, 11-05 and 11-06 two records got Nan on ['dt_est'] column,
-        # so we need drop them by row in the next part
-        # convert weather data ['dt'] (unix time) to Eastern Stardard Time(EST)
-        # pass an argument(series) to function tz_convert()
-        df_nj_weather['dt_est'] = df_nj_weather['dt'].apply(self.tz_convert)
-        # according to Timestamp split into year, quarter, month and day for further merge action
-        df_nj_weather['year'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[0])
-        df_nj_weather['quarter'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[1])
-        df_nj_weather['month'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[2])
-        df_nj_weather['day'] = df_nj_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[3])
-        # another way to use apply()
-        # df_nj_weather['dt_est'] = df_nj_weather['dt'].apply(lambda x: pd.TimeStamp(x, unit='s', tz='America/New_York'))
-        df_pa_weather['dt_est'] = df_pa_weather['dt'].apply(self.tz_convert)
-        # according to Timestamp split into year, quarter, month and day for further merge action
-        df_pa_weather['year'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[0])
-        df_pa_weather['quarter'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[1])
-        df_pa_weather['month'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[2])
-        df_pa_weather['day'] = df_pa_weather['dt_est'].apply(lambda x: self.tz_y_m_d(x)[3])
-        # for merge purpose, make sure two column have same name
-        df_product['dt_est'] = df_product['StartDate'].apply(self.round_to_hour)
-        #***********************End***************************************************
-
-
-        #***************Drop non-realted columns**********************
-        # *************Drop by columns**************
-        # ['Bulk Density'] have 50% missing data
-        df_product = df_product.drop(self.PRODUCT_DROP, axis=1)
-        print("In Production sheet, these columns have been dropped {}".format(self.PRODUCT_DROP))
-        # Drop un-related colunms from weather data
-        df_nj_weather = df_nj_weather.drop(self.WEATHER_DROP, axis = 1)
-        # some weather data might also need clearn
-        list_missing_nj = class_eda.missing_plot(df_nj_weather)
-        df_nj_weather = df_nj_weather.drop(list_missing_nj, axis = 1)
-        list_missing_pa = class_eda.missing_plot(df_pa_weather)
-        df_pa_weather = df_pa_weather.drop(list_missing_pa, axis = 1)
-        #******************End************************************
-
-
-        #***********************Drop missing data********************************
-        list_col_missing_product = class_eda.missing_plot(df_product)
-        #**************Drop by rows**********************
-        # we get the name of columns that has missing value from eda part
-        df_product,df_dropped = self.drop_na(df_product, list_col_missing_product)
-        #******************End*****************
-
-
-        #*****************Drop by outliers****************
-        # after drop non-related columns, convert timestamp format, drop missing data by rows,
-        # we need to drop outliers in some necessary columns
-        # we might need automate generate outlier by some EDA() models
-        str_col='YieldPercentage'
-        df_product, df_outlier_1 = self.z_outlier(df_product, str_col, z_threshold = self.YEILD_THRESHOLD, abs=False)
-        # ['Rate'] data have a lot of extramly large data. According to human judgement, >2000 might be delete.
-        # But when we use statistical method to testify our data outliers
-        # In z-score function, if we set value to 3, ['Rate']>1275 row=3 will be delete
-        # if we set value to 2, ['Rate']>973 row=247 will be delete
-        df_product, df_outlier_2 = self.z_outlier(df_product, 'Rate', z_threshold = self.IQR_THRESHOLD, abs=False)
-        # concate outliers into one data frame
-        frames = [df_outlier_1, df_outlier_2]
-        df_outlier = pd.concat(frames)
-        #*****************************End**********************
-
-
-        #********************Adidtional modified*****************************
-        # we have a few small changes based on some inputing error
-        # For example ['Food Addit'] == ['Food Additive']
-        df_product.loc[df_product['ProdLine'] == 'Food Addit', 'ProdLine'] = 'Food Additive'
-        # PA only proedure food related (non-Fragance) kind custome material
-        # we find a record in PA location index=3299, Batchnumber = PASD340354
-        # It could be correct record but for now we delete this line
-        ind=df_product[(df_product['ProdLine'] == 'Fragrance') & (df_product['BatchNumber'].str.contains('PA'))].index
-        # we can use former index to drop, beacuse it's two long for one line code.
-        df_product.drop(index=ind, inplace=True)
-
-        # when we deal with product data, we find some dryer in the wrong location.
-        # Generally, NJ has Dryer 01 -04, PA has Dryer 06-11.
-        # For index=7491, BatchNumber ='NJSD362799' this records originally palced in NJ and then swithed over
-        # to be run in PA. Typically, Spray-Tek protocal is cancel the NJ order and re-submit it as a PA order
-        # In this records, the NJ order was not cancelled. The dyer number is accurate and the location is incorrect
-        df_nj_1 = df_product[df_product['BatchNumber'].str.contains('NJ')]
-        # then we find the index of these error recording columns
-        idx_1 = df_nj_1.loc[(df_nj_1['Dryer'] == 'Dryer 06') | (df_nj_1['Dryer'] == 'Dryer 09')].index
-        # idx_1 = df_nj_1.loc[df_nj_1['Dryer'].isin(['Dryer 06','Dryer 09'])].index
-        # The best way to replace/assign value is use .loc[] to locate and then assign new value 'PA000'
-        df_product.loc[idx_1, 'BatchNumber'] = 'PA000'
-        # vice-versa, we find Dryer01 in PA, it should be in NJ
-        # there index=(2761, 3245), BatchNumber=('PASD337379', 'PASD337014')
-        df_pa_1 = df_product[df_product['BatchNumber'].str.contains('PA')]
-        idx_2 = df_pa_1.loc[(df_pa_1['Dryer'] == 'Dryer 01')].index
-        df_product.loc[idx_2, 'BatchNumber'] = 'NJ000'
-        # anthoer way, If you want to assign multi-values to a pd.Series, the other head also should be pd.Serise
-        # df_product.loc[idx_2, 'BatchNumber'] = df_product.loc[idx_2, 'BatchNumber'].map(lambda x: 'NJ111').values
-
-        #*************************End**********************************************
-
-
-        cost_time = round((time() - start_time), 4)
-        print("*" * 40, "End clean_data() with {} second".format(cost_time), "*" * 40, end='\n\n')
-
-        return df_product, df_nj_weather, df_pa_weather, df_dropped, df_outlier
 

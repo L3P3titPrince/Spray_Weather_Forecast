@@ -4,6 +4,7 @@ from class_31_hyperparameters import HyperParamters
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import squarify
 
 class EDA(HyperParamters):
     """:arg
@@ -164,3 +165,45 @@ class EDA(HyperParamters):
         #     df_bcr = pd.DataFrame()
 
         return df_base, df_bcr
+
+    def squrify_treemap(self, df, col_name='ProdLine', bool_groupby = False):
+        """
+        Args:
+        ------
+        df:pd.DataFrame
+            data source
+        col_name:string
+            the column you want to plot
+        bool_groupby:boolean
+            if bool_groupby = True, we need to groupby this dataframe, If False, we can directly use dataframe
+
+        :return:
+        """
+        if bool_groupby:
+            # create a new dataframe with groupby list and its corresponding count size
+            df_map = df.groupby(by=[col_name]).size().reset_index(name='counts')
+        else:
+            df_map = df.copy()
+        # create labels for squrify demonstration
+        # defalut apply() direction is vertical, we push a column series to apply() function and default axis=0
+        # In default, x will be two column features and x[0] will be the first element for this two column features
+        # which are chemicl and 229(size/count of chemical)
+        # So when you change axis=1, the output x become row direction output, x[0] will become all name of first column
+        # Lable will be category name + its groupby size
+        series_labels = df_map.apply(lambda x:str(x[0] + "\n (" + str(x[1]) + ")"), axis=1)
+        # squrify library need into the box size with list format
+        list_sizes = df_map.iloc[:,1].values.tolist()
+        # create colors by length of existing labels, for example, we have 8 category, Spectral will provide 8 colors
+        list_colors = [plt.cm.Spectral( i/float(len(series_labels))) for i in range(len(series_labels))]
+        # set the plot size, weight=20 is just fit jupter notebook weight
+        plt.figure(figsize = (20,8), dpi=80)
+        squarify.plot(sizes = list_sizes, label = series_labels, color = list_colors, alpha=1.0)
+        #title
+        plt.title("Treemap of")
+        plt.axis('off')
+        plt.show()
+
+        return None
+
+
+

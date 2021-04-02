@@ -4,6 +4,9 @@ from class_34_preprocess import PreProcess
 from class_33_eda import EDA
 from class_35_merge_data import MergeData
 from class_41_feature_engineering import FeatureEngineer
+from class_42_split_compile import SplitCompile
+
+import pandas as pd
 
 import bar_chart_race as bcr
 
@@ -12,7 +15,7 @@ def main():
     We use this function to call process one by one.
     """
 
-
+    """
     # ***********************import******************************
     class_import = ImportData()
     # If you don't have csv file, you should run this line first. Reading csv is more quick than excel
@@ -77,13 +80,37 @@ def main():
     class_fe = FeatureEngineer()
     # using feature_eng() function to produce a new df with new feature per records (not multi records but groupby)
     df_prod_nj, df_prod_pa = class_fe.feature_eng(df_product_6, df_nj, df_pa)
+    """
+
+
+
+
+    #--------------------------------WARNING-----------------------------------
+    #--------------------------------WARNING-----------------------------------
+    #********************************INTERUPT FOR SPPED UP RUNNING TIME ************************
+    # restore into 03_data
+    df_prod_nj.to_csv('03_data/34_df_prod_nj.csv', index=False)
+    df_prod_pa.to_csv('03_data/35_df_prod_pa.csv', index=False)
+    # to read fast
+    # df_prod_nj = pd.read_csv('03_data/34_df_prod_nj.csv')
+    # df_prod_pa = pd.read_csv('03_data/35_df_prod_pa.csv')
+    #***********************************************************************************************
+    #--------------------------------WARNING-----------------------------------
+    #--------------------------------WARNING-----------------------------------
+
+
+    #*******************4.2 Split into sub dataframe*************************
+    class_sc = SplitCompile()
+    dict_prod_nj, df_pie_nj = class_sc.split_df(df_prod_nj)
+    dict_prod_pa, df_pie_pa = class_sc.split_df(df_prod_pa)
+
 
 
 
     return (df_product_1, df_nj_weather_1, df_pa_weather_1, df_product_2, df_nj_weather_2, df_pa_weather_2,
             df_product_3, df_nj_weather_3, df_pa_weather_3, df_product_4, df_product_5, df_dropped, df_outlier,
             df_product_6, df_nj_weather_6, df_pa_weather_6,
-            df_multi, df_nj, df_pa, df_prod_nj, df_prod_pa)
+            df_multi, df_nj, df_pa, df_prod_nj, df_prod_pa, dict_prod_nj, df_pie_nj , dict_prod_pa, df_pie_pa)
 
 
 
@@ -94,6 +121,6 @@ if __name__=="__main__":
     (df_product_1, df_nj_weather_1, df_pa_weather_1, df_product_2, df_nj_weather_2, df_pa_weather_2,
      df_product_3, df_nj_weather_3, df_pa_weather_3, df_product_4, df_product_5, df_dropped, df_outlier,
      df_product_6, df_nj_weather_6, df_pa_weather_6,
-     df_multi, df_nj, df_pa, df_prod_nj, df_prod_pa) = main()
+     df_multi, df_nj, df_pa, df_prod_nj, df_prod_pa, dict_prod_nj, df_pie_nj , dict_prod_pa, df_pie_pa) = main()
 
     print("OVER")
