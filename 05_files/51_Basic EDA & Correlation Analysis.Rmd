@@ -1,0 +1,233 @@
+---
+title: "SprayTek_EDA"
+author: "Hao Yan"
+date: "2/21/2021"
+output: html_document
+---
+
+```{r}
+library(lubridate)
+library(ggplot2)
+
+library(xlsx)
+```
+
+
+```{r}
+product = readxl::read_excel("20160101_20201231_ProductionData.xlsx", sheet = 1)
+
+#PASD it was done in Bethlehem
+#NJSD it was done in Middlesex
+
+###product$location is added ('Bethlehem', 'Middlesex')###
+
+product$ScheduledDryQty = as.numeric(product$ScheduledDryQty)
+product$YieldPercentage = as.numeric(product$YieldPercentage)
+product = product[order(product$StartDate), ]
+
+weather_m = readxl::read_excel("20160101_20201231_ProductionData.xlsx", sheet = 2)
+weather_b = readxl::read_excel("20160101_20201231_ProductionData.xlsx", sheet = 3)
+head(product)
+head(weather_m)
+nrow(product) #9970
+ncol(product) #16
+```
+
+```{r}
+product$StartDate[1] - product$StartDate[nrow(product)]
+product$StartDate[1]  #first day: "2016-01-02 08:54:58 UTC"
+product$StartDate[nrow(product)]  #last day("2020-12-30 20:55:10 UTC")
+plot(product$StartDate[1:nrow(product)-1] - product$StartDate[-1])
+
+weather_b$dt_iso[1]  #first day: "2016-01-01 00:00:00 +0000 UTC"
+weather_b$dt_iso[nrow(weather_b)]  #last day "2020-12-31 23:00:00 +0000 UTC"
+
+weather_m$dt_iso[1]  #first day: "2016-01-01 00:00:00 +0000 UTC"
+weather_m$dt_iso[nrow(weather_m)]  #last day "2020-12-31 23:00:00 +0000 UTC"
+```
+
+```{r}
+#############################
+#some data transformation
+#############################
+# check_location = function(s) {
+#   substring(s, 1, 2)
+# }
+# apply(data.frame(product$BatchNumber), margin = 2, fun = check_location)
+
+product$location = rep('', length(nrow(product)))
+Bethlehem = c()
+Middlesex = c()
+for (i in 1:9970) {
+  if (substring(product$BatchNumber[i], 1, 2) == "NJ") {
+    Middlesex = append(Middlesex, i)
+    product$location[i] = 'Middlesex'
+  }
+  else if (substring(product$BatchNumber[i], 1, 2) == "PA") {
+    Bethlehem = append(Bethlehem, i)
+    product$location[i] = 'Bethlehem'
+  }
+}
+```
+
+```{r}
+#############################
+#find the according index of the product made in Bethlehem in the table 'weather_b' 
+#and join the product (made in Bethlehem) and weather table
+#############################
+Bethlehem_weather = rep(0, length(Bethlehem))
+j = 1
+i = 1
+# for (i in 1:nrow(weather_b)) {
+while (j <= length(Bethlehem)) {
+  time_dif = abs(as.POSIXct(strptime(weather_b$dt_iso[i], "%Y-%m-%d %H:%M:%S", tz = 'GMT')) - product$StartDate[Bethlehem][j])
+  
+  if (time_dif <= duration(30, "minute")) {
+    # print(time_dif)
+    Bethlehem_weather[j] = i
+    j = j + 1
+    i = i - 1
+  }
+  i = i + 1
+}
+
+#check if the index-finding is successful
+# sum(Bethlehem_weather == 0)
+# which(Bethlehem_weather == 0)
+# 
+# length(product$StartDate[Bethlehem])
+
+#join the two tables
+product_weathea_b = data.frame(product[Bethlehem, ] ,weather_b[Bethlehem_weather, ])
+#check
+sum(abs(product_weathea_b$StartDate - as.POSIXct(strptime(product_weathea_b$dt_iso, "%Y-%m-%d %H:%M:%S", tz = 'GMT'))) > duration(30, 'minute'))
+#write to file
+write.xlsx(x = product_weathea_b, file = "product_weather_16to20.xlsx",
+        sheetName = "Bethlehem", row.names = TRUE)
+```
+
+```{r}
+#############################
+#oin the product (made in ***Middlesex***) and weather table
+#############################
+Middlesex_weather = rep(0, length(Middlesex))
+j = 1
+i = 1
+# for (i in 1:nrow(weather_b)) {
+while (j <= length(Middlesex)) {
+  time_dif = abs(as.POSIXct(strptime(weather_b$dt_iso[i], "%Y-%m-%d %H:%M:%S", tz = 'GMT')) - product$StartDate[Middlesex][j])
+  
+  if (time_dif <= duration(30, "minute")) {
+    # print(time_dif)
+    Middlesex_weather[j] = i
+    j = j + 1
+    i = i - 1
+  }
+  i = i + 1
+}
+
+#check if the index-finding is successful
+sum(Middlesex_weather == 0)
+which(Middlesex_weather == 0)
+
+length(product$StartDate[Middlesex])
+
+#join the two tables
+product_weathea_m = data.frame(product[Middlesex, ] ,weather_b[Middlesex_weather, ])
+#check
+sum(abs(product_weathea_m$StartDate - as.POSIXct(strptime(product_weathea_m$dt_iso, "%Y-%m-%d %H:%M:%S", tz = 'GMT'))) > duration(30, 'minute'))
+#write to file
+write.xlsx(product_weathea_m, file = "product_weather_16to20.xlsx", sheetName = "Middlesex", append = TRUE, row.names = TRUE)
+```
+
+############################################################
+
+### Check Corelation Between Production Factor and Total Run Time
+
+```{r}
+#############################
+#study TotalRunTime_Hrs
+#############################
+hist(product$TotalRunTime_Hrs)
+sd(product$TotalRunTime_Hrs) #29.97118
+mean(product$TotalRunTime_Hrs) #32.64711
+
+#check leverage/outlier
+high_leverage_t = product$TotalRunTime_Hrs >= mean(product$TotalRunTime_Hrs) + 2*sd(product$TotalRunTime_Hrs)
+
+sum(high_leverage_t) #499 TotalRunTime_Hrs points are high leveraged, 5%
+sum(high_leverage_t)/nrow(product)
+
+#the plot of total run time >= 2 sd from the mean
+hist(
+product$TotalRunTime_Hrs[high_leverage_t])
+```
+
+############################################################
+
+```{r}
+#############################
+#study TotalRunTime_Hrs
+#############################
+hist(product$TotalRunTime_Hrs)
+sd(product$TotalRunTime_Hrs) #29.97118
+mean(product$TotalRunTime_Hrs) #32.64711
+
+#check leverage/outlier
+high_leverage_t = product$TotalRunTime_Hrs >= mean(product$TotalRunTime_Hrs) + 2*sd(product$TotalRunTime_Hrs)
+
+sum(high_leverage_t) #499 TotalRunTime_Hrs points are high leveraged, 5%
+sum(high_leverage_t)/nrow(product)
+
+#the plot of total run time >= 2 sd from the mean
+hist(
+product$TotalRunTime_Hrs[high_leverage_t])
+```
+
+```{r}
+#############################
+#study location
+#############################
+ggplot(product) + geom_bar(aes(x = location))
+```
+
+
+```{r}
+#############################
+#study the corelation btw TotalRunTime_Hrs and otehr varibales
+#############################
+unique(product$Dryer)
+#1 2 3 4 6 7 8 9 10 11, 1-11 w/o 5
+
+dryer_time = lm(product$TotalRunTime_Hrs ~ product$Dryer)
+summary(dryer_time) #dryer makes the difference
+plot(product$Dryer, product$TotalRunTime_Hrs)
+boxplot(product$TotalRunTime_Hrs ~ product$Dryer)
+
+flow_time = lm(product$TotalRunTime_Hrs ~ product$Flow)
+summary(flow_time) #poor uses 10 hrs longer than good
+boxplot(product$TotalRunTime_Hrs ~ product$Flow)
+
+H_time = lm(product$TotalRunTime_Hrs ~ product$Hygroscopicity)
+summary(H_time) #Medium uses 18.186 hrs less than high
+boxplot(product$TotalRunTime_Hrs ~ product$Hygroscopicity) #need to clean
+
+Moisture_Target_time = lm(product$TotalRunTime_Hrs ~ product$`Moisture Target`)
+summary(Moisture_Target_time) #overall significant, but need to clean. makes bigs diff
+#boxplot(product$TotalRunTime_Hrs ~ product$`Moisture Target`) #need to clean
+
+ScheduledDryQty_time = lm(product$TotalRunTime_Hrs ~ product$ScheduledDryQty, na.action=na.exclude)
+summary(ScheduledDryQty_time) #significant
+plot(product$ScheduledDryQty, product$TotalRunTime_Hrs)
+abline(coefficients(ScheduledDryQty_time)[1], coefficients(ScheduledDryQty_time)[2])
+
+YieldPercentage_time = lm(product$TotalRunTime_Hrs ~ product$YieldPercentage, na.action=na.exclude)
+summary(ScheduledDryQty_time) #significant, ***but might be influenced by outlier
+plot(product$YieldPercentage, product$TotalRunTime_Hrs)
+abline(coefficients(YieldPercentage_time)[1], coefficients(YieldPercentage_time)[2])
+
+location_time = lm(product$TotalRunTime_Hrs ~ product$location)
+summary(location_time) #significant, Middlesex is 20 hrs faster than the other one
+plot(1)
+boxplot(product$TotalRunTime_Hrs ~ product$location)
+```
