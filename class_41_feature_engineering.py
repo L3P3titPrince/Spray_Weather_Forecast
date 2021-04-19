@@ -336,16 +336,17 @@ class FeatureEngineer(HyperParamters):
         """
         # in the future, we will find a way to use time as part our of our input, but now, we ignore the time
         # maybe we can only categorical quarter to four one-hot, and transfrom 24 hours to day and night ont-hot
-        list_nn = ['hours', 'humidity_max','humidity_min', 'humidity_mean', 'humidity_median', 'humidity_trend',
+        list_col = ['hours', 'humidity_max','humidity_min', 'humidity_mean', 'humidity_median', 'humidity_trend',
                   'temp_max', 'temp_min', 'temp_mean', 'temp_median', 'temp_trend',
                   'temp_min_max', 'temp_min_min', 'temp_min_mean', 'temp_min_median',
                   'temp_min_trend', 'temp_max_max', 'temp_max_min', 'temp_max_mean',
                   'temp_max_median', 'temp_max_trend', 'pressure_max', 'pressure_min',
-                  'pressure_mean', 'pressure_median', 'pressure_trend',
-                  'Rate']
-        # create y target labels
-        y = df['Rate']
-        X = df.drop(['Rate'], axis =1 )
+                  'pressure_mean', 'pressure_median', 'pressure_trend']
+
+        # create y target labels, due to scalar only process dataframe,so here we use two []
+        # to make sure y is a dataframe not a pd.Serise which can't be direct use in MinMaxScaler()
+        y = df[['Rate']].copy()
+        X = df[list_col].copy()
         # 1. Split into train, validation, and test, train will be one group, test and valistion will be another
         X_train ,X_val_test, y_train, y_val_test = train_test_split(X, y, test_size = 0.4, random_state=1024)
 
@@ -369,3 +370,14 @@ class FeatureEngineer(HyperParamters):
 
         return X_train_std, X_val, X_test, y_train_mms, y_val, y_test
 
+    def test_for_whole_dataset(self):
+        """
+        This is just for test
+        :return:
+        """
+        # instert dryer_numbers by only extract numer from ['Dryer']
+        df_prod_nj_2.insert(4, 'Dryer_num', df_prod_nj_2['Dryer'].str.extract('(\d+)'))
+        # reverse Rate?
+        new_rate  = ActualyQty/dryging_time
+
+        return None

@@ -190,7 +190,7 @@ class EDA(HyperParamters):
         # which are chemicl and 229(size/count of chemical)
         # So when you change axis=1, the output x become row direction output, x[0] will become all name of first column
         # Lable will be category name + its groupby size
-        series_labels = df_map.apply(lambda x:str(x[0] + "\n (" + str(x[1]) + ")"), axis=1)
+        series_labels = df_map.apply(lambda x : str(x[0]) + "\n (" + str(x[1]) + ")", axis=1)
         # squrify library need into the box size with list format
         list_sizes = df_map.iloc[:,1].values.tolist()
         # create colors by length of existing labels, for example, we have 8 category, Spectral will provide 8 colors

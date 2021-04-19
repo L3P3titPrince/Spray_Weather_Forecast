@@ -5,6 +5,7 @@ from class_33_eda import EDA
 from class_35_merge_data import MergeData
 from class_41_feature_engineering import FeatureEngineer
 from class_42_split_compile import SplitCompile
+from class_51_nn_models import NNModels
 
 import pandas as pd
 
@@ -103,14 +104,27 @@ def main():
     class_sc = SplitCompile()
     dict_prod_nj, df_pie_nj = class_sc.split_df(df_prod_nj)
     dict_prod_pa, df_pie_pa = class_sc.split_df(df_prod_pa)
+    # get the useful df from pervious result
+    df_08_Flavors = dict_prod_pa['df_08_Flavors']
+    # normalize and standardlize
+    class_fe = FeatureEngineer()
+    X_train, X_val, X_test, y_train, y_val, y_test = class_fe.feature_scaling(df_08_Flavors)
+    # transform y part into one hot
+    arr_y_train = class_fe.five_calssify(y_train)
+    arr_y_val = class_fe.five_calssify(y_val)
+    arr_y_test = class_fe.five_calssify(y_test)
 
-
-
+    #**********************5.1 MLP model********************************
+    class_nn = NNModels()
+    model_2 = class_nn.mlp_model()
+    hist_2 = model_2.fit(X_train, arr_y_train, validation_data=(X_val, arr_y_val), epochs=30, batch_size=32, verbose=1)
 
     return (df_product_1, df_nj_weather_1, df_pa_weather_1, df_product_2, df_nj_weather_2, df_pa_weather_2,
             df_product_3, df_nj_weather_3, df_pa_weather_3, df_product_4, df_product_5, df_dropped, df_outlier,
             df_product_6, df_nj_weather_6, df_pa_weather_6,
-            df_multi, df_nj, df_pa, df_prod_nj, df_prod_pa, dict_prod_nj, df_pie_nj , dict_prod_pa, df_pie_pa)
+            df_multi, df_nj, df_pa, df_prod_nj, df_prod_pa, dict_prod_nj, df_pie_nj , dict_prod_pa, df_pie_pa,
+            df_08_Flavors, X_train, X_val, X_test, y_train, y_val, y_test,
+            arr_y_train, arr_y_val, arr_y_test, hist_2)
 
 
 
@@ -121,6 +135,8 @@ if __name__=="__main__":
     (df_product_1, df_nj_weather_1, df_pa_weather_1, df_product_2, df_nj_weather_2, df_pa_weather_2,
      df_product_3, df_nj_weather_3, df_pa_weather_3, df_product_4, df_product_5, df_dropped, df_outlier,
      df_product_6, df_nj_weather_6, df_pa_weather_6,
-     df_multi, df_nj, df_pa, df_prod_nj, df_prod_pa, dict_prod_nj, df_pie_nj , dict_prod_pa, df_pie_pa) = main()
+     df_multi, df_nj, df_pa, df_prod_nj, df_prod_pa, dict_prod_nj, df_pie_nj , dict_prod_pa, df_pie_pa,
+     df_08_Flavors, X_train, X_val, X_test, y_train, y_val, y_test,
+     arr_y_train, arr_y_val, arr_y_test, hist_2) = main()
 
     print("OVER")

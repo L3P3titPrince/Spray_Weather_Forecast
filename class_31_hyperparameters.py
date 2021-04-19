@@ -80,3 +80,7 @@ class HyperParamters(object):
         self.TWO_SIGMA = 2.5
         # if we don't want delete less rows, we can use three sigma, it will only delete approcimate 30 rows.
         # self.THREE_SIGMA = 0.3
+
+
+        self.NN_OUTPUT = 5
+        # self.NN_OUTPUT = 10
